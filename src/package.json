@@ -1,0 +1,12 @@
+{
+  "name": "ec2-service-functions",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "dependencies": {
+    "bluebird": "^3.4.6",
+    "dotenv": "^2.0.0",
+    "lodash": "^4.16.4"
+  }
+}

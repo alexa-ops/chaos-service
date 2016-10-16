@@ -1,0 +1,64 @@
+service: chaos-service
+provider:
+  name: aws
+  runtime: nodejs4.3
+  iamRoleStatements:
+     -  Effect: Allow
+        Action:
+          - dynamodb:DescribeTable
+          - dynamodb:Scan
+          - dynamodb:Query
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${opt:region}:*:table/${self:custom.chaosTaskTableName}
+custom:
+  chaosTaskTableName: chaos-tasks-${{opt:stage}}
+  writeEnvVars:
+      SERVERLESS_STAGE: ${opt:stage}
+      SERVERLESS_SERVICE_NAME: ${self:service}
+
+plugins:
+  - serverless-plugin-write-env-vars
+  - serverless-offline
+  - serverless-run-function-plugin
+
+package:
+  include:
+  exclude:
+
+functions:
+  start:
+    handler: src/index.start
+    events:
+      - http: POST chaos
+
+  stop:
+    handler: src/index.stop
+    events:
+      - http: DELETE chaos
+
+  run:
+    handler: src/index.run
+    events:
+      - schedule: rate(15 minutes)
+
+resources:
+    Resources:
+    MoistureData:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:custom.chaosTaskTableName}
+        AttributeDefinitions:
+          -
+            AttributeName: Id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: ClientId
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
