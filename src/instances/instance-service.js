@@ -5,13 +5,21 @@ const _ = require('lodash');
 
 const promisfy = (obj) => BbPromise.promisifyAll(obj);
 
-const instanceListParams = {
-    Filters: [{
-        Name: 'instance-state-name',
-        Values: [
-            'running',
-        ]
-    }]
+const getInstanceListParams = (state) => {
+    const params = {
+        Filters: []
+    };
+
+    if (state) {
+        params.Filters.push({
+            Name: 'instance-state-name',
+            Values: [
+                state,
+            ]
+        });
+    }
+
+    return state;
 };
 
 const getInstancesPage = (ec2, params, currentInstances) => {
@@ -26,24 +34,63 @@ const getInstancesPage = (ec2, params, currentInstances) => {
 
             if (result.NextToken) {
                 console.log('Getting next page');
-                const params = _.assign({
+                const nextParams = _.assign({
                     NextToken: result.NextToken,
-                }, instanceListParams);
+                }, params);
 
-                return getInstancesPage(ec2, params, instances)
+                return getInstancesPage(ec2, nextParams, instances)
             }
 
             return instances;
         });
 };
 
-const list = (ec2) => {
+const list = (ec2, state) => {
     promisfy(ec2);
 
-    const params = _.assign({}, instanceListParams);
+    const params = getInstanceListParams(state);
 
     return getInstancesPage(ec2, params, []);
 }
+
+const getCountBySelector = (selector) => {
+    switch(selector) {
+        case 'az':
+        case 'availability-zone':
+            return (i) => (i.Placement.AvailabilityZone)
+        case 'name':
+            return (i) => {
+                console.log('Tags', i.Tags);
+                const nameTag = _.find(i.Tags, { 'Key': 'Name' });
+                return nameTag ? nameTag.Value : '';
+            }
+        case 'size':
+            return (i) => (i.InstanceType)
+        case 'state':
+        default:
+            return (i) => (i.State.Name);
+    }
+}
+
+const countBy = (ec2, selector) => {
+    const selectorFunc = getCountBySelector(selector);
+
+    return list(ec2).then((instances) => {
+        if(!instances.length) {
+            return { total: 0 };
+        }
+
+        const grouped = _.groupBy(instances, selectorFunc);
+        console.log('Grouped ', grouped);
+
+        return _.reduce(grouped, (accum, value, key) => {
+            accum[key] = value.length;
+            return accum;
+        }, {
+            total: instances.length
+        });
+    });
+};
 
 const create = (ec2, imageId, name, size, count) => {
     console.log('Creating instances', {
@@ -80,7 +127,9 @@ const create = (ec2, imageId, name, size, count) => {
 }
 
 const stop = (ec2, instanceIds) => {
-    console.log('Stopping instances', { instanceIds });
+    console.log('Stopping instances', {
+        instanceIds
+    });
 
     promisfy(ec2);
 
@@ -92,7 +141,9 @@ const stop = (ec2, instanceIds) => {
 }
 
 const terminate = (ec2, instanceIds) => {
-    console.log('Stopping instances', { instanceIds });
+    console.log('Stopping instances', {
+        instanceIds
+    });
 
     promisfy(ec2);
 
@@ -105,6 +156,7 @@ const terminate = (ec2, instanceIds) => {
 
 
 module.exports = {
+    countBy,
     list,
     create,
     stop,

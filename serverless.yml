@@ -21,19 +21,24 @@ package:
     - 'src/**'
 
 functions:
+  instanceCount:
+    handler: src/instances/count.handler
+    memorySize: 512
+    timeout: 10
+
   instanceStart:
     handler: src/instances/start.handler
     memorySize: 512
-    timeout: 60
+    timeout: 20
     environment:
       AWS_AMI_ID: ami-b73b63a0
 
   instanceStop:
     handler: src/instances/stop.handler
     memorySize: 512
-    timeout: 60
+    timeout: 10
 
   instanceTerminate:
     handler: src/instances/terminate.handler
     memorySize: 512
-    timeout: 60
+    timeout: 10

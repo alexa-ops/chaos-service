@@ -1,26 +1,17 @@
 'use strict';
 
-const BbPromise = require('bluebird');
 const _ = require('lodash');
 
-const imageService = require('./image-service');
 const instanceService = require('./instance-service');
 
 const getRandomInstanceIds = (ec2, numInstances) => {
     return instanceService
-            .list(ec2)
+            .list(ec2, 'running')
             .then((instances) => {
                 console.log('List results', instances);
                 const instanceIds = instances.map(i => i.InstanceId);
                 return _.take(_.shuffle(instanceIds), numInstances);
             });
-}
-
-const getImageIds = (ec2) => {
-    return imageService.list(ec2).then(result => {
-        console.log('Retrieved Images', result);
-        return result.Images.map(image => image.ImageId);
-    });
 }
 
 const start = (ec2, imageId, instanceSize, numInstances) => {
