@@ -6,23 +6,23 @@ const _ = require('lodash');
 const promisfy = (obj) => BbPromise.promisifyAll(obj);
 
 const getInstanceListParams = (state) => {
-    const params = {
-        Filters: []
-    };
+    const params = {};
 
     if (state) {
-        params.Filters.push({
+        params.Filters =[{
             Name: 'instance-state-name',
             Values: [
                 state,
             ]
-        });
+        }];
     }
 
-    return state;
+    return params;
 };
 
 const getInstancesPage = (ec2, params, currentInstances) => {
+    console.log('Querying instaces with params', params);
+
     return ec2
         .describeInstancesAsync(params)
         .then(result => {
