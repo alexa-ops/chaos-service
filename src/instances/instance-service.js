@@ -67,28 +67,36 @@ const getCountBySelector = (selector) => {
         case 'size':
             return (i) => (i.InstanceType)
         case 'state':
-        default:
             return (i) => (i.State.Name);
+        default:
+            throw new Error(`Unsupported selector ${selector}`)
     }
 }
 
 const countBy = (ec2, selector) => {
-    const selectorFunc = getCountBySelector(selector);
-
     return list(ec2).then((instances) => {
         if(!instances.length) {
             return { total: 0 };
         }
 
+        if(!selector) {
+            return { total: instances.length };
+        }
+
+        const selectorFunc = getCountBySelector(selector);
+
         const grouped = _.groupBy(instances, selectorFunc);
         console.log('Grouped ', grouped);
 
-        return _.reduce(grouped, (accum, value, key) => {
-            accum[key] = value.length;
-            return accum;
-        }, {
+        const result = {
             total: instances.length
+        };
+
+        result.groups = _.map(grouped, (value, key) => {
+            return { key: key, value: value.length };
         });
+
+        return result;
     });
 };
 
