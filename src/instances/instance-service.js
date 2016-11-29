@@ -74,6 +74,12 @@ const getCountBySelector = (selector) => {
 }
 
 const countBy = (ec2, selector) => {
+    console.log('Counting instances', {
+        selector,
+    });
+
+    promisfy(ec2);
+
     return list(ec2).then((instances) => {
         if(!instances.length) {
             return { total: 0 };
